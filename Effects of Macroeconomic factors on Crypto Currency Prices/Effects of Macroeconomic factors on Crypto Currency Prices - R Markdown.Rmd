@@ -1,0 +1,699 @@
+---
+title: "Effects of Macroeconomic factors on Crypto Currency Prices"
+author: "Karthikeya, Shenal, Senal, Nathan"
+date: "2022-11-21"
+output: 
+  html_document:
+    number_sections: true
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+---
+
+
+<style>
+body {
+  color: #708090;
+  font-family: journal;
+  background-color: #F5F5F5:
+}
+#header {
+  color: #708090;
+  background-color: #F5F5F5;
+  font-family: journal;
+  font-size: 80px;
+}
+</style>
+
+
+
+```{r setup, include=FALSE}
+
+```
+
+# Introduction
+
+In this presentation our main objective is to explore how prices of particular  cryptocurrencies (CCs from here on)  fluctuated with certain macroeconomic factors.Over the last few years, we have observed drastic highs and lows in the CC market. With the Covid-19 pandemic and the ensuing lockdowns, the talk around CCs came into prominence and became more widespread.
+
+
+
+![](https://a57.foxnews.com/static.foxbusiness.com/foxbusiness.com/content/uploads/2021/05/1440/810/Ethereum-Bitcoin-Dogecoin.jpg?ve=1&tl=1)
+
+
+
+
+## Methodology
+
+In order to investigate this topic, we are going to choose four different CCs (bitcoin, dogecoin,etherium, and tether) and, using basic OLS regression, look at the relationship between these coins and certain macroeconomic factors (Consumer Price Index, Federal Interest Rates). As a further point of comparison, we are also going to look at the relationship between the CCs and the NASDAQ 100 top tech firms index to understand the relationship between this relatively new type of investment and more traditional forms of investment instruments. As a final point of interest we included a dummy variable for the most severe months of the COVID-19 pandemic.
+
+## Model Limitations
+
+We address the limitations of our model at the end of paper.
+
+## Econometric model
+
+log(Cryptocurrency price) = Tech stock price index + CPI + Interest Rates + Inflation rate + Covid or not + Ɛ
+
+
+
+# Packages used
+
+```{r install-packages, include=FALSE, message=FALSE}
+#install.packages("AER") 
+#install.packages("tidyverse")
+#install.packages("car")
+#install.packages("gmodels")
+#install.packages("stargazer")
+#install.packages("dplyr")
+#install.packages("lubridate")
+#install.packages("xts")
+#install.packages("bayesm")
+#install.packages("blsR")
+#install.packages("PerformanceAnalytics")
+#install.packages("corrplot")
+#install.packages("Hmisc")
+#install.packages("ggthemes")
+#install.packages("gganimate")
+#install.packages("transformr")
+#install.packages("magick")
+#install.packages("gifski")
+#install.packages("av")
+```
+
+
+```{r LoadLibraries, message=FALSE, warning=FALSE}
+library(AER)        #applied econometrics in R
+library(tidyverse)  #Data wrangling/cleansing
+library(car)        #Hypothesis testing
+library(gmodels)    #model fitting
+library(stargazer)  #Regression data visualization 
+library(dplyr)      #Data wrangling/cleansing
+library(lubridate)  #This package help to convert data into date/time formats
+library(xts)        #dealing with date/time materials
+library(bayesm)     #Do bayesian analysis using DID model to factor effects of COVID on Crypto prices
+library(blsR)       #to scrape data from the BLS for analysis
+library(readr)      #read data(CSV,etc)
+library(corrplot)   #Correlation coef and matrix
+library(PerformanceAnalytics) #econometrics package for financial instruments
+library(ggthemes)   #Used for visualization and adding themes to plots/charts
+library(gganimate)  #animating visualizations
+library(transformr) #manipulating visualizations
+library(magick)     #animating visualizations for markdowns
+library(gifski)     #animating visualizations for markdowns
+library(av)         #animating visualizations for markdowns
+```
+
+
+
+# Data import and transformation
+
+## Import and transformation
+```{r data-import, message=FALSE,warning=FALSE}
+# Dependent Variable
+
+dta_doge <- read_csv("Dogecoin.csv")
+dta_eth <- read_csv("Ethereum.csv")
+dta_bitcoin <- read_csv("bitcoin.csv")
+dta_teth <- read_csv("Tether.csv")
+
+# Independent variables
+
+data <- read.csv("CPI for All Urban Consumers.csv",header=FALSE)
+dta_Nasdaq <- read.csv("NASDAQ 100 Tech.csv",header=TRUE)
+dta_COVID <- read.csv("Covid-Binary.csv",header=TRUE)
+dta_Interest <- read.csv("FEDFUNDS.csv",header=TRUE)
+```
+
+## Datasets used
+
+**Cryptocurrency prices** – From Kaggle, we have obtained a dataset of top 50 crypto currency prices ranging from 2010 up to August 2021. We are specifically focusing on Bitcoin, Dogecoin, Etherium, and Tether. 
+
+**Tech stock prices** – From Yahoo finance, we have obtained the NASDAQ 100 technology sector index and taken the average monthly close price.
+
+**CPI (inflation)** – From the Bureau of Labor Statistics (BLS), we have obtained inflation rate change which includes the monthly average CPI for all urban consumers. 
+
+**Covid-19** – We created a table of time periods specifying the period before and after Covid. We took 1st March 2020 as the start date of Covid19 Pandemic, as March was the date when most countries around the world commenced lockdowns and covid restrictions were put in place & January 2021 as when the main lockdowns ended.
+
+**Interest Rates** – From the FRED, we have data taken of the Federal Funds Effective Rate across the time period of our analysis which is from 2010 to 2021.
+
+[Kaggle - Cryptourrency Prices](https://www.kaggle.com/datasets/odins0n/top-50-cryptocurrency-historical-prices?select=Bitcoin.csv)
+
+[Yahoo Finance - NASDAQ 100 tech stock prices(NDXT)](https://finance.yahoo.com/quote/%5ENDXT/history?period1=1262304000&period2=1668384000&interval=1mo&filter=history&frequency=1mo&includeAdjustedClose=true)
+
+[Average Interest Rates](https://fiscaldata.treasury.gov/datasets/average-interest-rates-treasury-securities/average-interest-rates-on-u-s-treasury-securities)
+
+[BLS - inflation rate](https://data.bls.gov/pdq/SurveyOutputServlet) 
+
+[FRED - interest rates](https://fred.stlouisfed.org/series/FEDFUNDS)
+
+
+
+## Explaining the data
+
+
+The Cryptocurrency prices were obtained from Kaggle to help provide insights into what currencies are the most volatile, is there a possibility of predicting future prices , are there correlations between the price fluctuations? Overall prices are captured between 2010 and 2021
+The Nasdaq 100 tech stock price data which was captured from Yahoo finance ,is an index which has 100 of the largest ,most actively traded ,non-financial companies that are listed on the Nasdaq Stock Market . It reflects daily movement of the index price.
+The federal funds rate is the interest rate at which depository institutions trade federal funds (balances held at Federal Reserve Banks) with each other overnight.
+The Bureau of Labor Statistics (BLS) ,"Consumer Price Index for All Urban Consumers: All Items Less Food & Energy" is an aggregate of prices paid by urban consumers for a typical basket of goods, excluding food and energy. This measurement, known as "Core CPI," is widely used by economists because food and energy have very volatile prices and hence is excluded from the basket of goods. 
+
+
+
+```{r data-import-and-transformation, include=FALSE, message=FALSE}
+
+## CREATING DOGE MONTHLY AVERAGES
+dta_doge$Date <- as.POSIXlt( dta_doge$Date, format="%m/%d/%Y %H:%M" )
+#round dates down to Month
+dta_doge$month <- floor_date(dta_doge$Date, "month")
+
+#Aggregate daily details to by Month level
+doge_month <- dta_doge %>%
+  group_by(month) %>%
+  summarize("avg_opening_price" = mean(Open))
+names(doge_month)[1] ="date"
+
+
+# CREATING ETHERIUM MONTHLY AVERAGES
+dta_eth$Date <- as.POSIXlt( dta_eth$Date, format="%m/%d/%Y %H:%M" )
+#round dates down to week
+dta_eth$month <- floor_date(dta_eth$Date, "month")
+
+##Aggregate daily details to by Month level
+eth_month <- dta_eth%>%
+  group_by(month) %>%
+  summarize("avg_opening_price" = mean(Open))
+str(dta_eth)
+names(eth_month)[1] ="date"
+
+## CREATING BITCOIN MONTHLY AVERAGES
+dta_bitcoin$Date <- as.POSIXlt( dta_bitcoin$Date, format="%m/%d/%Y %H:%M" )
+#round dates down to Month
+dta_bitcoin$month <- floor_date(dta_bitcoin$Date, "month")
+
+#find mean sales by Month
+bitcoin_month <- dta_bitcoin%>%
+  group_by(month) %>%
+  summarize("avg_opening_price" = mean(Open))
+names(bitcoin_month)[1] ="date"
+
+#Tether data formatting
+dta_teth$Date <- as.POSIXlt( dta_teth$Date, format="%m/%d/%Y %H:%M" )
+
+#round dates down to Month
+dta_teth$month <- floor_date(dta_teth$Date, "month")
+
+##Aggregate daily details to by Month level
+teth_month <- dta_teth%>%
+  group_by(month) %>%
+  summarize("avg_opening_price" = mean(Open))
+names(teth_month)[1] ="date"
+
+```
+
+```{r independent-variable-transformation, include=FALSE, message=FALSE}
+
+#CPI DATA TRANSFORMATION
+#removing top rows
+data <- data[-c(0,1,2,3,4,5,6,7,8,9,10,11), ] 
+
+#removing extra unnecesary columns
+data <- data[ -c(5:6) ]
+
+#making headers from the new columns and then removing it from the data
+colnames(data) <- as.character(data[1,])
+data <- data[-c(1), ] 
+
+#changing values in period to be a month
+#str(dta_CPI)
+data[data == "M01"] <- "01/01"
+data[data == "M02"] <- "02/01"
+data[data == "M03"] <- "03/01"
+data[data == "M04"] <- "04/01"
+data[data == "M05"] <- "05/01"
+data[data == "M06"] <- "06/01"
+data[data == "M07"] <- "07/01"
+data[data == "M08"] <- "08/01"
+data[data == "M09"] <- "09/01"
+data[data == "M10"] <- "10/01"
+data[data == "M11"] <- "11/01"
+data[data == "M12"] <- "12/01"
+
+data <- subset(data,Period != "S02")
+data <- subset(data,Period != "S01")
+
+
+#creating a new column named date and taking out the spaces inbetween data
+data$Date <- gsub(" ", "",paste(data$Period,"/",data$Year))
+
+dta_CPI <- data %>%
+  select(Date,Value)
+
+dta_CPI$Date <- mdy(dta_CPI$Date)
+dta_CPI$Date <- as.POSIXlt( dta_CPI$Date, format="%m/%d/%Y %H:%M")
+
+names(dta_CPI)[2] ="cpi"
+dta_CPI$Date <- as.POSIXlt(dta_CPI$Date, format="%m/%d/%Y %H:%M")
+
+dta_CPI <- select(dta_CPI,Date, cpi )
+# Altered CPI from char to numeric
+dta_CPI$cpi <- as.numeric(as.character(dta_CPI$cpi))
+
+# NASDAQ data transformation
+
+dta_Nasdaq$Date <- ymd(dta_Nasdaq$Date)
+dta_Nasdaq$Date <- as.POSIXlt( dta_Nasdaq$Date, format="%Y/%m/%d")
+
+dta_Nasdaq <- select(dta_Nasdaq,Date, Adj.Close)
+
+# Covid data transformation
+
+
+dta_COVID$Date <- mdy(dta_COVID$Date)
+dta_COVID$Date <- as.POSIXlt( dta_COVID$Date, format="%Y/%m/%d")
+
+# federal interest rates data transformation  
+
+names(dta_Interest)[2] ="Interest Rate"
+names(dta_Interest)[1] ="Date"
+
+dta_Interest$Date <- ymd(dta_Interest$Date)
+dta_Interest$Date <- as.POSIXlt( dta_Interest$Date, format="%m/%d/%Y %H:%M")
+
+```
+
+```{r joins, include=FALSE, message=FALSE}
+
+colnames(dta_CPI) <- c("date","cpi")
+colnames(dta_COVID) <- c("SNo","date","ba_covid")
+colnames(dta_Nasdaq) <- c("date","nasdaq_close")
+colnames(dta_Interest) <- c("date","interest_rate")
+#Use Left Joins
+
+
+# Creating Doge table
+doge_join <-  left_join(doge_month,dta_CPI, by = "date")
+doge_join <-  left_join(doge_join,dta_Nasdaq, by = "date")
+doge_join <-  left_join(doge_join,dta_COVID, by = "date")
+doge_join <-  left_join(doge_join,dta_Interest, by = "date")
+
+#Creating bitcoin table
+bitcoin_join <-  left_join(bitcoin_month,dta_CPI, by = "date")
+bitcoin_join <-  left_join(bitcoin_join,dta_Nasdaq, by = "date")
+bitcoin_join <-  left_join(bitcoin_join,dta_COVID, by = "date")
+bitcoin_join <-  left_join(bitcoin_join,dta_Interest, by = "date")
+
+#Creating Etherium table
+eth_join <-  left_join(eth_month,dta_CPI, by = "date")
+eth_join <-  left_join(eth_join,dta_Nasdaq, by = "date")
+eth_join <-  left_join(eth_join,dta_COVID, by = "date")
+eth_join <-  left_join(eth_join,dta_Interest, by = "date")
+
+#Creating tether table
+teth_join <-  left_join(teth_month,dta_CPI, by = "date")
+teth_join <-  left_join(teth_join,dta_Nasdaq, by = "date")
+teth_join <-  left_join(teth_join,dta_COVID, by = "date")
+teth_join <-  left_join(teth_join,dta_Interest, by = "date")
+
+#Creating alternate datasets for special use
+bitcoin_join_2 <- bitcoin_join
+doge_join_2 <- doge_join
+eth_join_2 <- eth_join
+teth_join_2 <- teth_join
+
+# RENAMING COLUMNS TO JOIN COINS
+colnames(bitcoin_join_2) <- c("date","avg_opening_price_bitcoin","bitcoin_Open","nasdaq_close","Low","ba_covid.","interest_rate")
+colnames(doge_join_2) <- c("date","avg_opening_price_doge","cpi","nasdaq_close","ba_covid","interest_rate")
+colnames(eth_join_2) <- c("date","avg_opening_price_eth","cpi","nasdaq_close","unknown","ba_covid","interest_rate_eth")
+colnames(teth_join_2) <- c("date","avg_opening_price_teth","cpi","nasdaq_open","unknown","ba_covid","interest_rate_teth")
+
+#JOINING THE COINS INTO ONE TABLE (ON DATE)
+coin_join <- merge(x = bitcoin_join_2, y = doge_join_2, by = "date")
+coin_join <- merge(x = coin_join, y = eth_join_2, by = "date")
+coin_join <- merge(x = coin_join, y = teth_join_2, by = "date")
+
+
+# Isolated Ind. Variables for use in vis
+ind_var <-  full_join(dta_Nasdaq,dta_CPI, by = "date")
+ind_var <-  full_join(ind_var,dta_Interest, by = "date")
+
+```
+
+
+```{r Special-Transform-after-Joins, include=FALSE, message=FALSE}
+
+#Had to find out data types for use in correlation plots. Used it for problem solving purposes
+is.numeric(ind_var$cpi)
+is.numeric(ind_var$nasdaq_close)
+is.numeric(ind_var$interest_rate)
+
+# Altered CPI from char to numeric
+bitcoin_join$cpi <- as.numeric(as.character(bitcoin_join$cpi))
+doge_join$cpi <- as.numeric(as.character(doge_join$cpi))
+eth_join$cpi <- as.numeric(as.character(eth_join$cpi))
+teth_join$cpi <- as.numeric(as.character(teth_join$cpi))
+```
+
+
+## Data Wrangling
+
+The individual Cryptocurrency datasets of Bitcoin,Ethereum,Tether & Dogecoin had the variables of date , price , open , high, low, volume & change % all captured at a daily level. Data was cleansed to only have the date and the open price columns as variables . Afterwards the data was **aggregated** from the daily level to a monthly database for each Cryptocurrency.
+The CPI dataset initially had a lot of unnecessary information. Unrequired headings,rows and columns were removed from the dataset and a new header was created with the variables of SeriesID, Year, Period & Value. Final datatable was filtered to only capture the variables of Date & CPI with data transformation done to have the date in date/time format & CPI as a numeric.
+The Nasdaq 100 dataset initially had the variables of Date, Open, High, Low, Close, Adjusted close & Volume. Final datatable had variables of only Date and adjusted closing price
+The Covid status database only had the variables of Sno, Date & Covid status.
+Data Wrangling was done to convert the column names of all the independent variables to eliminate spaces in names and make more code friendly.
+Final datasets were created through **joins** of each cryptocurrency price to include all the variables of interest together. Final datasets for each cryptocurrency had the variables of “date”,”average price of respective currency” ,”consumer price index” ,”during or before covid pandemic” &” federal interest rates”.
+Various other permutations of the above mentioned data were combined in a variety of ways to explore different facets of our data. One of the most prominent examples of this was a table created by combining the prices of the individual coins (coin_join) and looking at how correlated their prices were relative to one another. This same method was used to look at the correlation between our independent variables as well.
+
+
+
+# Exploratory Data Analysis
+
+## Explore each dependent variable
+
+
+```{r BASIC-STATS, include=FALSE, message=FALSE}
+# Detailed Summary of coins
+
+summary(dta_bitcoin)
+summary(dta_doge)
+summary(dta_eth)
+summary(dta_teth)
+```
+
+
+Summary of Bitcoin prices
+
+```{r summary-of-bitcoin-prices, echo=FALSE, message=FALSE}
+summary(dta_bitcoin[4])
+```
+
+Summary of Doge coin prices
+
+```{r summary-of-doge-prices, echo=FALSE, message=FALSE}
+summary(dta_doge[4])
+```
+
+Summary of Ethereum prices
+
+```{r summary-of-ethereum-prices, echo=FALSE, message=FALSE}
+
+summary(dta_eth[4])
+```
+
+summary of tether prices
+
+```{r summary-of-tether-prices, echo=FALSE, message=FALSE}
+
+summary(dta_teth[4])
+```
+
+
+## Explore each independent variable
+
+
+Summary of CPI
+
+```{r summary-of-CPI, echo=FALSE, message=FALSE}
+summary(dta_CPI)
+```
+
+Summary of Interest rates
+
+```{r summary-of-Interest-rates, echo=FALSE, message=FALSE}
+
+summary(dta_Interest)
+```
+
+summary of Nasdaq index
+
+```{r summary-of-Nasdaq-index, echo=FALSE, message=FALSE}
+
+summary(dta_Nasdaq)
+```
+
+Summary of COVID
+
+```{r summary-of-COVID, echo=FALSE, message=FALSE}
+summary(dta_COVID)
+```
+
+
+## Visualizations
+
+```{r visualization-together, echo=FALSE, message=FALSE}
+plot_summary <- ggplot(coin_join, aes(x=date)) + 
+  geom_line(aes(y = avg_opening_price_bitcoin), color = "red") + 
+  geom_line(aes(y = avg_opening_price_doge), color="steelblue", linetype="solid") +
+  geom_line(aes(y = avg_opening_price_eth), color = "darkgreen") + 
+  geom_line(aes(y = avg_opening_price_teth), color="purple", linetype="longdash") +
+  ggtitle("Cryptocurrency prices across time") +
+  labs(x = "Time period", y = "Prices USD",
+       title = "Cryptocurrency Prices",
+       subtitle = "Fluctuations in currency prices between 2017 and 2021",
+       caption = "Data: Kaggle", 
+       tag = "Fig.1") +
+  theme_economist() +
+  theme(
+    plot.title = element_text(color="Black", size=14, face="bold.italic",hjust = 0),
+    axis.title.x = element_text(color="Black", size=11, face="bold" ,vjust = 0.5 ),
+    axis.title.y = element_text(color="Black", size=11, face="bold",vjust = 0.5 )
+  )  
+#plot_summary
+Animate_allcoins <- plot_summary + transition_reveal(date,range = NULL)
+Animate_allcoins
+
+```
+
+```{r visualization-seperate, echo=FALSE, message=FALSE}
+
+#Plotting Coins seperately
+
+#Bitcoin Chart
+plot_bitcoin <- ggplot(bitcoin_join, aes(x=date )) + 
+  geom_line(aes(y= avg_opening_price), color = "red")+
+  labs(x = "Time period", y = "Prices USD",
+       title = "Bitcoin Prices",
+       subtitle = "Fluctuations in Bitcoin prices between 2010 and 2021",
+       caption = "Data: Kaggle", 
+       tag = "Fig.2") +
+  theme_economist() +
+  theme(
+    plot.title = element_text(color="Black", size=14, face="bold.italic",hjust = 0),
+    axis.title.x = element_text(color="Black", size=11, face="bold" ,vjust = 0.5 ),
+    axis.title.y = element_text(color="Black", size=11, face="bold",vjust = 0.5 )
+  )  
+#plot_bitcoin
+Animate_bitcoin <- plot_bitcoin + transition_reveal(date,range = NULL)
+Animate_bitcoin
+
+```
+
+
+```{r visualization-doge, echo=FALSE, message=FALSE}
+
+
+#Doge Chart
+plot_doge <- ggplot(doge_join, aes(x=date)) + 
+  geom_line(aes(y= avg_opening_price), color = "steelblue")+
+  labs(x = "Time period", y = "Prices USD",
+       title = "Dogecoin Prices",
+       subtitle = "Fluctuations in Dogecoin prices between 2017 and 2021",
+       caption = "Data: Kaggle", 
+       tag = "Fig.3") +
+  theme_economist() +
+  theme(
+    plot.title = element_text(color="Black", size=14, face="bold.italic",hjust = 0),
+    axis.title.x = element_text(color="Black", size=11, face="bold" ,vjust = 0.5 ),
+    axis.title.y = element_text(color="Black", size=11, face="bold",vjust = 0.5 )
+  ) 
+#plot_doge
+Animate_dogecoin <- plot_doge + transition_reveal(date,range = NULL)
+Animate_dogecoin
+
+```
+
+
+```{r visualization-etherium, echo=FALSE, message=FALSE}
+
+#Ethereum Chart
+plot_eth <- ggplot(eth_join, aes(x=date)) + 
+  geom_line(aes(y= avg_opening_price), color = "darkgreen")+
+  labs(x = "Time period", y = "Prices USD",
+       title = "Ethereum Prices",
+       subtitle = "Fluctuations in Dogecoin prices between 2016 and 2021",
+       caption = "Data: Kaggle", 
+       tag = "Fig.4") +
+  theme_economist() +
+  theme(
+    plot.title = element_text(color="Black", size=14, face="bold.italic",hjust = 0),
+    axis.title.x = element_text(color="Black", size=11, face="bold" ,vjust = 0.5 ),
+    axis.title.y = element_text(color="Black", size=11, face="bold",vjust = 0.5 )
+  ) 
+#plot_eth
+Animate_ethereum <- plot_eth + transition_reveal(date,range = NULL)
+Animate_ethereum
+
+
+```
+
+
+```{r visualization-tether, echo=FALSE, message=FALSE}
+
+#Tether Chart
+plot_teth <- ggplot(teth_join, aes(x=date)) + 
+  geom_line(aes(y= avg_opening_price), color = "purple")+
+  labs(x = "Time period", y = "Prices USD",
+       title = "Tether Prices",
+       subtitle = "Fluctuations in Dogecoin prices between 2017 and 2021",
+       caption = "Data: Kaggle", 
+       tag = "Fig.5") +
+  theme_economist() +
+  theme(
+    plot.title = element_text(color="Black", size=14, face="bold.italic",hjust = 0),
+    axis.title.x = element_text(color="Black", size=11, face="bold" ,vjust = 0.5 ),
+    axis.title.y = element_text(color="Black", size=11, face="bold",vjust = 0.5 )
+  ) 
+#plot_teth
+Animate_tether <- plot_teth + transition_reveal(date,range = NULL)
+Animate_tether
+
+```
+
+```{r visualization-relevant-independent-variables, echo=FALSE, message=FALSE, warning=FALSE}
+
+Plot_indvar <- ggplot(ind_var, aes(x = date)) +
+  geom_line (aes(y = interest_rate), color = "firebrick") +
+  geom_line (aes(y = cpi) ,  color = "blue") +
+  labs(x = "Time period", y = "Percentage (%)",
+       title = "Inflation and Interest Rates",
+       subtitle = "Movement of marco economic facotors between 2010 and 2021",
+       caption = "Data: BLS and FRED", 
+       tag = "Fig.6") +
+  theme_economist() +
+  theme(
+    plot.title = element_text(color="Black", size=14, face="bold.italic",hjust = 0),
+    axis.title.x = element_text(color="Black", size=11, face="bold" ,vjust = 0.5 ),
+    axis.title.y = element_text(color="Black", size=11, face="bold",vjust = 0.5 )
+  ) 
+Animate_independant <- Plot_indvar + transition_reveal(date,range = NULL)
+Animate_independant
+#Plot_indvar
+
+```
+
+
+## Correlation of the Independent variables
+
+```{r correlation matrices, echo=FALSE, message=FALSE}
+
+#Dropped all na values (1 row)
+ind_var <- drop_na(ind_var)
+
+#removing extra unnecesary columns
+ind_var <- ind_var[ -c(1) ]
+#Creating the Correlation Matrix
+M <- cor(ind_var)
+#corrplot(M, method = 'number', order = 'alphabet')
+corrplot(M, method = 'color', order = 'alphabet')
+#corrplot.mixed(M, method = 'color', order = 'alphabet')
+
+```
+
+## Correlation of the Cryptocurrency prices (Dependant variables)
+
+```{r dependent-variable-corr-matrix, echo=FALSE, message=FALSE}
+coin_corr  <- select(coin_join,avg_opening_price_bitcoin,avg_opening_price_doge,avg_opening_price_eth,avg_opening_price_teth)
+colnames(coin_corr) <- c("Bitcoin Price","Dogecoin Price","Ethereum Price","Tether Price")
+N <- cor(coin_corr)
+corrplot(N, method = 'color',order = 'alphabet')
+
+
+```
+
+## gererate 4 econometric models by combining datasets
+
+**Doge Regression**
+
+doge_reg <- lm(log(avg_opening_price)~cpi+nasdaq_close+ba_covid+interest_rate, data = doge_join)
+summary(doge_reg)
+
+**Bitcoin Regression**
+
+bitcoin_reg <- lm(log(avg_opening_price)~cpi+nasdaq_close+ba_covid+interest_rate, data = bitcoin_join)
+summary(bitcoin_reg)
+
+**Ethereum Regression**
+
+
+eth_reg <- lm(log(avg_opening_price)~cpi+nasdaq_close+ba_covid+interest_rate, data = eth_join)
+summary(eth_reg)
+
+**Tether Regression**
+
+teth_reg <- lm(log(avg_opening_price)~cpi+nasdaq_close+ba_covid+interest_rate, data = teth_join)
+summary(teth_reg)
+
+
+```{r 4-econometric-models , include=FALSE, message= FALSE ,warning=FALSE}
+
+doge_reg <- lm(log(avg_opening_price)~cpi+nasdaq_close+ba_covid+interest_rate, data = doge_join)
+summary(doge_reg)
+
+
+bitcoin_reg <- lm(log(avg_opening_price)~cpi+nasdaq_close+ba_covid+interest_rate, data = bitcoin_join)
+summary(bitcoin_reg)
+
+eth_reg <- lm(log(avg_opening_price)~cpi+nasdaq_close+ba_covid+interest_rate, data = eth_join)
+summary(eth_reg)
+
+
+teth_reg <- lm(log(avg_opening_price)~cpi+nasdaq_close+ba_covid+interest_rate, data = teth_join)
+summary(teth_reg)
+
+```
+
+
+
+
+## Summary of exploratory data analysis
+1. Looked at the distribution of our dependent variables (CC prices) across time to identify trends.
+2. Looked at the correlation between different CC prices
+3. Looked at distribution of macroeconomic factors such as CPI & interest rates across time.
+4. Looked at the correlation between different independent variables.
+5. Ran OLS regressions for different crypto currencies
+
+
+# Summary of findings
+
+![](https://finbold.com/app/uploads/2022/11/Dogecoin-DOGE-price-prediction-for-December-31-2022.jpg)
+
+## Stargazer with regression of 4 modeels
+
+```{r stargazer, echo=FALSE, message=FALSE}
+stargazer(doge_reg,bitcoin_reg,eth_reg,teth_reg,type="text",align=TRUE,
+          keep.stat=c("n","rsq","f"), no.space=FALSE,df=FALSE, 
+          column.labels =c("doge_reg","bitcoin_reg","eth_reg","teth_reg"),
+          report="vcsp",notes="Standard errors in parentheses",
+          digit.separator = "",digits=3)
+
+```
+
+
+In this presentation our main objective was to explore how prices of particular  cryptocurrencies fluctuated with certain macroeconomic factors. Because cryptocurrencies are famously touted as a legitimate alternative to traditional investment instruments the answer to this question seemed to be worth investigating. Using macroeconomic data from the BLS, FRED, and relevant crypto price data acquired from Kagle,we were able to run  OLS regressions to get a general understanding for how these particular currencies were affected by macroeconomic factors. 
+
+We identified 3 main findings (assume 𝞪 =.1):
+
+1. While some less established coins, like doge and etherium, are very correlated with changes in macroeconomic factors, the more established coin (bitcoin) is the same.
+
+2. All of the coins are positively correlated with the NASDAQ indicating that instead of the crypto currencies acting as an alternative investment, they seem to be acting as an additional/complimentary investment to more standard investment  instruments.
+
+3. For our specific currencies, they are all positively correlated with each other, which is probably to be expected. Rather than the individual currencies acting as competing investments, they seem to be acting as complimentary investments.
+
+## Any limitations? what can be done to expand or improve upon  in the future?
+
+Because this was just a surface level analysis, there are quite a few limitations to our analysis. One important improvement we could make is to fine tune the way that we deal with the “time element” in our model. Because time plays a vital role in the way that our variables interact with each other, a next version of this model would do a better job of investigating the effects of this.
+One of the most interesting limitations we came to is this; because all of the coins are highly correlated with each other (outside of tether,) and 2 of the 3 (interesting) coins show that they are influenced by our listed macro factors, there are clearly factors in our error term that are highly influential on the prices of all our currencies.
+An interesting variable which can be further analyzed, if data was available, would be how graphics card (GPU) prices affect cryptocurrency prices. Blockchain technology is the foundation of cryptocurrency and requires high levels of computation, hence there is a requirement to have the latest cutting edge GPU’s. Therefore we would expect that CC prices would be affected by GPU prices/availability.
+
+
+![](https://thumbor.forbes.com/thumbor/fit-in/900x510/https://www.forbes.com/advisor/in/wp-content/uploads/2022/03/pexels-pixabay-315788-scaled.jpg)
